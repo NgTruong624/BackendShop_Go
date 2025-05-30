@@ -36,26 +36,68 @@ func (r *ProductRepository) GetAll(query *models.ProductQueryParams) ([]models.P
 	// Build query
 	dbQuery := r.db.Model(&models.Product{})
 
-	// Apply filters
+	// Apply search filters
 	if query.Search != "" {
-		dbQuery = dbQuery.Where("name ILIKE ? OR description ILIKE ?", "%"+query.Search+"%", "%"+query.Search+"%")
+		dbQuery = dbQuery.Where(
+			"name ILIKE ? OR description ILIKE ? OR category ILIKE ?",
+			"%"+query.Search+"%",
+			"%"+query.Search+"%",
+			"%"+query.Search+"%",
+		)
 	}
+
+	// Apply category filter
 	if query.Category != "" {
 		dbQuery = dbQuery.Where("category = ?", query.Category)
 	}
 
-	// Get total count
+	// Apply price range filter
+	if query.MinPrice > 0 {
+		dbQuery = dbQuery.Where("price >= ?", query.MinPrice)
+	}
+	if query.MaxPrice > 0 {
+		dbQuery = dbQuery.Where("price <= ?", query.MaxPrice)
+	}
+
+	// Apply stock filter
+	if query.InStock {
+		dbQuery = dbQuery.Where("stock > 0")
+	}
+
+	// Apply date range filter
+	if !query.StartDate.IsZero() {
+		dbQuery = dbQuery.Where("created_at >= ?", query.StartDate)
+	}
+	if !query.EndDate.IsZero() {
+		dbQuery = dbQuery.Where("created_at <= ?", query.EndDate)
+	}
+
+	// Get total count before pagination
 	if err := dbQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// Apply sorting
 	if query.SortBy != "" {
-		order := "ASC"
-		if query.Order == "desc" {
-			order = "DESC"
+		// Validate sort field to prevent SQL injection
+		validSortFields := map[string]string{
+			"name":       "name",
+			"price":      "price",
+			"stock":      "stock",
+			"created_at": "created_at",
+			"category":   "category",
 		}
-		dbQuery = dbQuery.Order(query.SortBy + " " + order)
+
+		if sortField, ok := validSortFields[query.SortBy]; ok {
+			order := "ASC"
+			if query.Order == "desc" {
+				order = "DESC"
+			}
+			dbQuery = dbQuery.Order(sortField + " " + order)
+		}
+	} else {
+		// Default sorting by created_at desc
+		dbQuery = dbQuery.Order("created_at DESC")
 	}
 
 	// Apply pagination

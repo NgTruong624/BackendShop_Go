@@ -48,26 +48,29 @@ func main() {
 	productHandler := handlers.NewProductHandler(db)
 	jwtMiddleware := middleware.NewJWTMiddleware(jwtSecret)
 
-	// Public routes
-	public := r.Group("/api/v1")
+	// API Routes
+	api := r.Group("/api/v1")
 	{
 		// Auth routes
-		public.POST("/register", authHandler.Register)
-		public.POST("/login", authHandler.Login)
+		api.POST("/register", authHandler.Register)
+		api.POST("/login", authHandler.Login)
 
-		// Product routes (public)
-		public.GET("/products", productHandler.GetProducts)
-		public.GET("/products/:id", productHandler.GetProduct)
-	}
+		// Product routes
+		products := api.Group("/products")
+		{
+			// Public routes
+			products.GET("", productHandler.GetProducts)           // Lấy danh sách sản phẩm
+			products.GET("/:id", productHandler.GetProduct)        // Xem chi tiết sản phẩm
 
-	// Protected routes
-	protected := r.Group("/api/v1")
-	protected.Use(jwtMiddleware.AuthMiddleware())
-	{
-		// Product routes (private - admin only)
-		protected.POST("/products", productHandler.CreateProduct)
-		protected.PUT("/products/:id", productHandler.UpdateProduct)
-		protected.DELETE("/products/:id", productHandler.DeleteProduct)
+			// Protected routes (yêu cầu JWT token và quyền admin)
+			adminProducts := products.Group("")
+			adminProducts.Use(jwtMiddleware.AuthMiddleware())
+			{
+				adminProducts.POST("", productHandler.CreateProduct)       // Tạo sản phẩm mới
+				adminProducts.PUT("/:id", productHandler.UpdateProduct)    // Cập nhật sản phẩm
+				adminProducts.DELETE("/:id", productHandler.DeleteProduct) // Xóa sản phẩm
+			}
+		}
 	}
 
 	// Start server

@@ -50,10 +50,26 @@ type UpdateProductRequest struct {
 
 // ProductQueryParams là cấu trúc cho các tham số tìm kiếm và phân trang
 type ProductQueryParams struct {
+	// Tìm kiếm cơ bản
 	Search   string `form:"search"`
 	Category string `form:"category"`
-	SortBy   string `form:"sort_by"` // price, name, created_at
-	Order    string `form:"order"`   // asc, desc
-	Page     int    `form:"page" binding:"min=1"`
-	Limit    int    `form:"limit" binding:"min=1,max=100"`
+
+	// Tìm kiếm theo giá
+	MinPrice float64 `form:"min_price"`
+	MaxPrice float64 `form:"max_price"`
+
+	// Tìm kiếm theo tồn kho
+	InStock bool `form:"in_stock"`
+
+	// Tìm kiếm theo thời gian
+	StartDate time.Time `form:"start_date"`
+	EndDate   time.Time `form:"end_date"`
+
+	// Sắp xếp
+	SortBy string `form:"sort_by"` // price, name, created_at, stock, category
+	Order  string `form:"order"`   // asc, desc
+
+	// Phân trang
+	Page  int `form:"page" binding:"min=1"`
+	Limit int `form:"limit" binding:"min=1,max=100"`
 }

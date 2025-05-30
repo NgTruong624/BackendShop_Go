@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/NgTruong624/project_backend/internal/models"
 	"github.com/NgTruong624/project_backend/internal/repository"
@@ -36,7 +37,42 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 	if query.Limit < 1 {
 		query.Limit = 10
 	}
+	if query.Limit > 100 {
+		query.Limit = 100
+	}
 
+	// Parse date parameters if provided
+	if startDate := c.Query("start_date"); startDate != "" {
+		if t, err := time.Parse("2006-01-02", startDate); err == nil {
+			query.StartDate = t
+		}
+	}
+	if endDate := c.Query("end_date"); endDate != "" {
+		if t, err := time.Parse("2006-01-02", endDate); err == nil {
+			// Set end date to end of day
+			t = t.Add(24*time.Hour - time.Second)
+			query.EndDate = t
+		}
+	}
+
+	// Parse boolean parameter
+	if inStock := c.Query("in_stock"); inStock != "" {
+		query.InStock = inStock == "true"
+	}
+
+	// Validate price range
+	if query.MinPrice > 0 && query.MaxPrice > 0 && query.MinPrice > query.MaxPrice {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid price range", "min_price cannot be greater than max_price"))
+		return
+	}
+
+	// Validate date range
+	if !query.StartDate.IsZero() && !query.EndDate.IsZero() && query.StartDate.After(query.EndDate) {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid date range", "start_date cannot be after end_date"))
+		return
+	}
+
+	// Get products from repository
 	products, total, err := h.repo.GetAll(&query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error fetching products", err.Error()))
@@ -58,7 +94,46 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 		})
 	}
 
+	// Calculate pagination info
 	totalPages := (int(total) + query.Limit - 1) / query.Limit
+
+	// Prepare metadata
+	meta := map[string]interface{}{
+		"total":        total,
+		"total_pages":  totalPages,
+		"current_page": query.Page,
+		"per_page":     query.Limit,
+		"has_next":     query.Page < totalPages,
+		"has_prev":     query.Page > 1,
+	}
+
+	// Add filter info to metadata
+	if query.Search != "" {
+		meta["search"] = query.Search
+	}
+	if query.Category != "" {
+		meta["category"] = query.Category
+	}
+	if query.MinPrice > 0 {
+		meta["min_price"] = query.MinPrice
+	}
+	if query.MaxPrice > 0 {
+		meta["max_price"] = query.MaxPrice
+	}
+	if query.InStock {
+		meta["in_stock"] = true
+	}
+	if !query.StartDate.IsZero() {
+		meta["start_date"] = query.StartDate.Format("2006-01-02")
+	}
+	if !query.EndDate.IsZero() {
+		meta["end_date"] = query.EndDate.Format("2006-01-02")
+	}
+	if query.SortBy != "" {
+		meta["sort_by"] = query.SortBy
+		meta["order"] = query.Order
+	}
+
 	c.JSON(http.StatusOK, utils.NewPaginatedResponse(
 		http.StatusOK,
 		"Products retrieved successfully",
@@ -67,6 +142,7 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 		totalPages,
 		total,
 		query.Limit,
+		meta,
 	))
 }
 
