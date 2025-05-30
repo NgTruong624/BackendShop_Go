@@ -305,4 +305,4 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, utils.NewResponse(http.StatusOK, "Product deleted successfully", nil))
-} 
+}

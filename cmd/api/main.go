@@ -59,8 +59,8 @@ func main() {
 		products := api.Group("/products")
 		{
 			// Public routes
-			products.GET("", productHandler.GetProducts)           // Lấy danh sách sản phẩm
-			products.GET("/:id", productHandler.GetProduct)        // Xem chi tiết sản phẩm
+			products.GET("", productHandler.GetProducts)    // Lấy danh sách sản phẩm
+			products.GET("/:id", productHandler.GetProduct) // Xem chi tiết sản phẩm
 
 			// Protected routes (yêu cầu JWT token và quyền admin)
 			adminProducts := products.Group("")

@@ -18,7 +18,7 @@ type PaginatedResponse struct {
 
 // Meta chứa thông tin phân trang và metadata
 type Meta struct {
-	Pagination Pagination          `json:"pagination"`
+	Pagination Pagination             `json:"pagination"`
 	Filters    map[string]interface{} `json:"filters,omitempty"`
 }
 
