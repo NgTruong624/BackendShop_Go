@@ -2,20 +2,22 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/NgTruong624/project_backend/internal/models"
+	"github.com/NgTruong624/project_backend/internal/repository"
 	"github.com/NgTruong624/project_backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type ProductHandler struct {
-	db *gorm.DB
+	repo *repository.ProductRepository
 }
 
 func NewProductHandler(db *gorm.DB) *ProductHandler {
 	return &ProductHandler{
-		db: db,
+		repo: repository.NewProductRepository(db),
 	}
 }
 
@@ -35,37 +37,8 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 		query.Limit = 10
 	}
 
-	// Build query
-	dbQuery := h.db.Model(&models.Product{})
-
-	// Apply filters
-	if query.Search != "" {
-		dbQuery = dbQuery.Where("name ILIKE ? OR description ILIKE ?", "%"+query.Search+"%", "%"+query.Search+"%")
-	}
-	if query.Category != "" {
-		dbQuery = dbQuery.Where("category = ?", query.Category)
-	}
-
-	// Get total count
-	var total int64
-	if err := dbQuery.Count(&total).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error counting products", err.Error()))
-		return
-	}
-
-	// Apply sorting
-	if query.SortBy != "" {
-		order := "ASC"
-		if query.Order == "desc" {
-			order = "DESC"
-		}
-		dbQuery = dbQuery.Order(query.SortBy + " " + order)
-	}
-
-	// Apply pagination
-	offset := (query.Page - 1) * query.Limit
-	var products []models.Product
-	if err := dbQuery.Offset(offset).Limit(query.Limit).Find(&products).Error; err != nil {
+	products, total, err := h.repo.GetAll(&query)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error fetching products", err.Error()))
 		return
 	}
@@ -99,9 +72,14 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 
 // GetProduct lấy chi tiết sản phẩm (Public)
 func (h *ProductHandler) GetProduct(c *gin.Context) {
-	id := c.Param("id")
-	var product models.Product
-	if err := h.db.First(&product, id).Error; err != nil {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid product ID", err.Error()))
+		return
+	}
+
+	product, err := h.repo.GetByID(uint(id))
+	if err != nil {
 		c.JSON(http.StatusNotFound, utils.NewErrorResponse(http.StatusNotFound, "Product not found", ""))
 		return
 	}
@@ -135,7 +113,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		return
 	}
 
-	product := models.Product{
+	product := &models.Product{
 		Name:        req.Name,
 		Description: req.Description,
 		Price:       req.Price,
@@ -144,7 +122,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		Category:    req.Category,
 	}
 
-	if err := h.db.Create(&product).Error; err != nil {
+	if err := h.repo.Create(product); err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error creating product", err.Error()))
 		return
 	}
@@ -172,20 +150,26 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	id := c.Param("id")
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid product ID", err.Error()))
+		return
+	}
+
 	var req models.UpdateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid request", err.Error()))
 		return
 	}
 
-	var product models.Product
-	if err := h.db.First(&product, id).Error; err != nil {
+	// Lấy sản phẩm hiện tại
+	product, err := h.repo.GetByID(uint(id))
+	if err != nil {
 		c.JSON(http.StatusNotFound, utils.NewErrorResponse(http.StatusNotFound, "Product not found", ""))
 		return
 	}
 
-	// Update fields
+	// Cập nhật các trường
 	if req.Name != "" {
 		product.Name = req.Name
 	}
@@ -205,7 +189,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		product.Category = req.Category
 	}
 
-	if err := h.db.Save(&product).Error; err != nil {
+	if err := h.repo.Update(product); err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error updating product", err.Error()))
 		return
 	}
@@ -233,8 +217,13 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 		return
 	}
 
-	id := c.Param("id")
-	if err := h.db.Delete(&models.Product{}, id).Error; err != nil {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid product ID", err.Error()))
+		return
+	}
+
+	if err := h.repo.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error deleting product", err.Error()))
 		return
 	}
