@@ -28,4 +28,9 @@ go.work
 
 # OS specific files
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Uploaded files and media
+static/uploads/
+static/uploads/*
+!static/uploads/.gitkeep 
