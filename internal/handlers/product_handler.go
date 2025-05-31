@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -305,4 +308,75 @@ func (h *ProductHandler) DeleteProduct(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, utils.NewResponse(http.StatusOK, "Product deleted successfully", nil))
+}
+
+// UploadProductImage xử lý upload ảnh cho sản phẩm
+func (h *ProductHandler) UploadProductImage(c *gin.Context) {
+	// Kiểm tra quyền admin
+	role := c.GetString("role")
+	if role != "admin" {
+		c.JSON(http.StatusForbidden, utils.NewErrorResponse(http.StatusForbidden, "Permission denied", "Only admin can upload product images"))
+		return
+	}
+
+	// Lấy ID sản phẩm từ URL
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid product ID", err.Error()))
+		return
+	}
+
+	// Kiểm tra sản phẩm tồn tại
+	product, err := h.repo.GetByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, utils.NewErrorResponse(http.StatusNotFound, "Product not found", ""))
+		return
+	}
+
+	// Lấy file từ request
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "No image file provided", err.Error()))
+		return
+	}
+
+	// Kiểm tra định dạng file
+	if !isValidImageType(file.Header.Get("Content-Type")) {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid file type", "Only JPG, PNG and GIF images are allowed"))
+		return
+	}
+
+	// Tạo tên file duy nhất
+	ext := filepath.Ext(file.Filename)
+	filename := fmt.Sprintf("%d_%d%s", product.ID, time.Now().Unix(), ext)
+	filepath := filepath.Join("static", "uploads", filename)
+
+	// Lưu file
+	if err := c.SaveUploadedFile(file, filepath); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error saving file", err.Error()))
+		return
+	}
+
+	// Cập nhật ImageURL trong database
+	product.ImageURL = "/" + filepath
+	if err := h.repo.Update(product); err != nil {
+		// Nếu lưu database thất bại, xóa file đã upload
+		os.Remove(filepath)
+		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error updating product", err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.NewResponse(http.StatusOK, "Image uploaded successfully", gin.H{
+		"image_url": product.ImageURL,
+	}))
+}
+
+// isValidImageType kiểm tra định dạng file có phải là ảnh hợp lệ không
+func isValidImageType(contentType string) bool {
+	validTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/gif":  true,
+	}
+	return validTypes[contentType]
 }
