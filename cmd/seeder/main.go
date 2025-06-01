@@ -125,4 +125,4 @@ func seedData(db *gorm.DB) error {
 	}
 
 	return nil
-} 
+}
