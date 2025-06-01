@@ -48,7 +48,7 @@ func main() {
 	// Cấu hình static file serving
 	// Cấu hình cho thư mục uploads với các tùy chọn bảo mật
 	r.Static("/uploads", "./static/uploads")
-	
+
 	// Cấu hình cho các file tĩnh khác (nếu có)
 	r.Static("/static", "./static")
 
@@ -60,7 +60,7 @@ func main() {
 			c.Header("X-Content-Type-Options", "nosniff")
 			c.Header("X-Frame-Options", "DENY")
 			c.Header("Content-Security-Policy", "default-src 'self'")
-			
+
 			// Cấu hình cache cho file
 			c.Header("Cache-Control", "public, max-age=31536000") // Cache 1 năm
 			c.Header("Expires", time.Now().AddDate(1, 0, 0).Format(time.RFC1123))
@@ -95,7 +95,7 @@ func main() {
 				adminProducts.POST("", productHandler.CreateProduct)       // Tạo sản phẩm mới
 				adminProducts.PUT("/:id", productHandler.UpdateProduct)    // Cập nhật sản phẩm
 				adminProducts.DELETE("/:id", productHandler.DeleteProduct) // Xóa sản phẩm
-				
+
 				// Route upload ảnh với middleware bảo mật
 				uploadGroup := adminProducts.Group("/:id")
 				uploadGroup.Use(func(c *gin.Context) {
@@ -103,7 +103,7 @@ func main() {
 					role := c.GetString("role")
 					if role != "admin" {
 						c.JSON(http.StatusForbidden, gin.H{
-							"error": "Permission denied",
+							"error":   "Permission denied",
 							"message": "Only admin can upload product images",
 						})
 						c.Abort()
