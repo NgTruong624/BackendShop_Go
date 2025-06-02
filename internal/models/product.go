@@ -70,6 +70,6 @@ type ProductQueryParams struct {
 	Order  string `form:"order"`   // asc, desc
 
 	// Phân trang
-	Page  int `form:"page" binding:"min=1"`
-	Limit int `form:"limit" binding:"min=1,max=100"`
+	Page  int `form:"page"`
+	Limit int `form:"limit" binding:"max=100"`
 }

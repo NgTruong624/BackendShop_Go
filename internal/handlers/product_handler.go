@@ -34,10 +34,10 @@ func (h *ProductHandler) GetProducts(c *gin.Context) {
 	}
 
 	// Set default values
-	if query.Page < 1 {
+	if query.Page <= 0 {
 		query.Page = 1
 	}
-	if query.Limit < 1 {
+	if query.Limit <= 0 {
 		query.Limit = 10
 	}
 	if query.Limit > 100 {
