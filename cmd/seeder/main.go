@@ -48,7 +48,7 @@ func main() {
 
 // seedData tạo dữ liệu mẫu cho database
 func seedData(db *gorm.DB) error {
-	// Tạo password hash cho admin
+	// Tạo password hash 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 	if err != nil {
 		return err
