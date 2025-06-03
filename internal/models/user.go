@@ -38,3 +38,14 @@ type RegisterRequest struct {
 	Password string `json:"password" binding:"required,min=6"`
 	FullName string `json:"full_name" binding:"required"`
 }
+
+// UserQueryParams là cấu trúc cho các tham số tìm kiếm và phân trang user
+type UserQueryParams struct {
+	// Phân trang
+	Page  int `form:"page"`
+	Limit int `form:"limit" binding:"max=100"`
+
+	// Tìm kiếm (optional - có thể mở rộng sau)
+	Search string `form:"search"`
+	Role   string `form:"role"` // admin, user
+}
