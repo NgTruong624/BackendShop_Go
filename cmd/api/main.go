@@ -82,11 +82,17 @@ func main() {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	authHandler := handlers.NewAuthHandler(db, jwtSecret)
 	productHandler := handlers.NewProductHandler(db)
+	adminHandler := handlers.NewAdminHandler(db)
 	jwtMiddleware := middleware.NewJWTMiddleware(jwtSecret)
 
 	// API Routes
 	api := r.Group("/api/v1")
 	{
+		// Status route
+		api.GET("/status", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		})
+
 		// Auth routes
 		api.POST("/register", authHandler.Register)
 		api.POST("/login", authHandler.Login)
@@ -123,6 +129,13 @@ func main() {
 				})
 				uploadGroup.POST("/upload", productHandler.UploadProductImage) // Upload ảnh sản phẩm
 			}
+		}
+
+		// Admin routes (yêu cầu JWT token và quyền admin)
+		admin := api.Group("/admin")
+		admin.Use(jwtMiddleware.AuthMiddleware())
+		{
+			admin.GET("/users", adminHandler.GetUsersList) // Lấy danh sách tất cả users
 		}
 	}
 
