@@ -33,10 +33,8 @@ func (r *ProductRepository) GetAll(query *models.ProductQueryParams) ([]models.P
 	var products []models.Product
 	var total int64
 
-	// Build query
 	dbQuery := r.db.Model(&models.Product{})
 
-	// Apply search filters
 	if query.Search != "" {
 		dbQuery = dbQuery.Where(
 			"name ILIKE ? OR description ILIKE ? OR category ILIKE ?",
@@ -45,26 +43,18 @@ func (r *ProductRepository) GetAll(query *models.ProductQueryParams) ([]models.P
 			"%"+query.Search+"%",
 		)
 	}
-
-	// Apply category filter
 	if query.Category != "" {
 		dbQuery = dbQuery.Where("category = ?", query.Category)
 	}
-
-	// Apply price range filter
 	if query.MinPrice > 0 {
 		dbQuery = dbQuery.Where("price >= ?", query.MinPrice)
 	}
 	if query.MaxPrice > 0 {
 		dbQuery = dbQuery.Where("price <= ?", query.MaxPrice)
 	}
-
-	// Apply stock filter
 	if query.InStock {
 		dbQuery = dbQuery.Where("stock > 0")
 	}
-
-	// Apply date range filter
 	if !query.StartDate.IsZero() {
 		dbQuery = dbQuery.Where("created_at >= ?", query.StartDate)
 	}
@@ -72,22 +62,15 @@ func (r *ProductRepository) GetAll(query *models.ProductQueryParams) ([]models.P
 		dbQuery = dbQuery.Where("created_at <= ?", query.EndDate)
 	}
 
-	// Get total count before pagination
 	if err := dbQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Apply sorting
 	if query.SortBy != "" {
-		// Validate sort field to prevent SQL injection
 		validSortFields := map[string]string{
-			"name":       "name",
-			"price":      "price",
-			"stock":      "stock",
-			"created_at": "created_at",
-			"category":   "category",
+			"name": "name", "price": "price", "stock": "stock",
+			"created_at": "created_at", "category": "category",
 		}
-
 		if sortField, ok := validSortFields[query.SortBy]; ok {
 			order := "ASC"
 			if query.Order == "desc" {
@@ -96,16 +79,13 @@ func (r *ProductRepository) GetAll(query *models.ProductQueryParams) ([]models.P
 			dbQuery = dbQuery.Order(sortField + " " + order)
 		}
 	} else {
-		// Default sorting by created_at desc
 		dbQuery = dbQuery.Order("created_at DESC")
 	}
 
-	// Apply pagination
 	offset := (query.Page - 1) * query.Limit
 	if err := dbQuery.Offset(offset).Limit(query.Limit).Find(&products).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return products, total, nil
 }
 
@@ -119,6 +99,21 @@ func (r *ProductRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Product{}, id).Error
 }
 
+// CheckIfNameExists kiểm tra tên sản phẩm đã tồn tại (loại trừ sản phẩm có ID = excludeID)
+func (r *ProductRepository) CheckIfNameExists(name string, excludeID uint) (bool, error) {
+	var count int64
+	query := r.db.Model(&models.Product{}).Where("name = ?", name)
+	if excludeID > 0 { // Nếu excludeID > 0 (tức là đang update), thì loại trừ ID này
+		query = query.Where("id <> ?", excludeID)
+	}
+	err := query.Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// --- Các hàm khác giữ nguyên ---
 // GetByCategory lấy sản phẩm theo danh mục
 func (r *ProductRepository) GetByCategory(category string) ([]models.Product, error) {
 	var products []models.Product
