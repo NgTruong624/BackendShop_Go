@@ -1,6 +1,29 @@
 # Project Backend
 
-A RESTful API backend service built with Go, Gin, and PostgreSQL.
+## Project Structure Guide
+
+This project is a RESTful API backend built with Go, Gin, and PostgreSQL.
+
+### Main Entry Points
+- `cmd/api/main.go`: Main API server entry point. Loads configuration from `.env` and starts the HTTP server.
+- `cmd/seeder/main.go`: Seeder entry point for populating the database with sample data.
+
+### Configuration
+- `.env`: Environment variables for database, JWT, and server configuration. See `.env.example` for template.
+
+### Key Directories
+- `internal/handlers/`: HTTP handlers for authentication, product, and admin endpoints.
+- `internal/middleware/`: Middleware, including JWT authentication.
+- `internal/models/`: Data models for users and products, plus request/response schemas.
+- `internal/repository/`: Data access layer for users and products.
+- `internal/utils/`: Utility functions (e.g., response formatting).
+- `static/uploads/`: Uploaded product images, served at `/uploads/<filename>`.
+
+### Development
+- Run the API: `go run cmd/api/main.go`
+- Seed the database: `go run cmd/seeder/main.go` or set `RUN_SEEDER=true` in `.env` and start the API.
+
+---
 
 ## Features
 

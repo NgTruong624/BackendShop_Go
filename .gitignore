@@ -34,3 +34,7 @@ Thumbs.db
 static/uploads/
 static/uploads/*
 !static/uploads/.gitkeep 
+
+# Cursor rules
+.cursor/rules
+.cursor/rules/*
