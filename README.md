@@ -16,7 +16,7 @@ This project is a RESTful API backend built with Go, Gin, and PostgreSQL.
 - `internal/middleware/`: Middleware, including JWT authentication.
 - `internal/models/`: Data models for users and products, plus request/response schemas.
 - `internal/repository/`: Data access layer for users and products.
-- `internal/utils/`: Utility functions (e.g., response formatting).
+- `internal/utils/`: Utility functions (e.g., response formatting, error handling).
 - `static/uploads/`: Uploaded product images, served at `/uploads/<filename>`.
 
 ### Development
@@ -28,6 +28,7 @@ This project is a RESTful API backend built with Go, Gin, and PostgreSQL.
 ## Features
 
 - User authentication (Register/Login) with JWT
+- Password management (change password with validation)
 - Role-based access control (Admin/User)
 - Product management (CRUD operations)
 - Product image upload (admin only)
@@ -35,6 +36,7 @@ This project is a RESTful API backend built with Go, Gin, and PostgreSQL.
 - Secure password hashing
 - Environment variable configuration
 - Database seeder for sample data
+- Enhanced error handling with detailed validation messages
 
 ## Project Structure
 
@@ -48,7 +50,7 @@ Project_backend_Go/
 │   ├── middleware/  # Middleware (JWT, etc.)
 │   ├── models/      # Data models
 │   ├── repository/  # Data access layer
-│   └── utils/       # Utilities (response, etc.)
+│   └── utils/       # Utilities (response, error handling)
 ├── static/uploads/  # Uploaded product images
 ├── .env             # Environment variables
 ├── go.mod, go.sum   # Go modules
@@ -97,6 +99,7 @@ Project_backend_Go/
 ### Auth
 - `POST /api/v1/register` – Register new user
 - `POST /api/v1/login` – Login and get JWT token
+- `POST /api/v1/change-password` – Change user password (requires authentication)
 
 ### Products
 - `GET /api/v1/products` – List products (with pagination/filter)
@@ -108,6 +111,41 @@ Project_backend_Go/
 
 ### Static Files
 - Uploaded images are served at `/uploads/<filename>`
+
+## Error Handling
+
+The API provides detailed error responses for various scenarios:
+
+1. Validation Errors:
+   ```json
+   {
+     "status": 400,
+     "message": "Validation failed",
+     "error": {
+       "current_password": "Current password is required.",
+       "new_password": "New password must be at least 6 characters long.",
+       "confirm_new_password": "Confirm password must match new password."
+     }
+   }
+   ```
+
+2. Authentication Errors:
+   ```json
+   {
+     "status": 401,
+     "message": "User not authenticated",
+     "error": ""
+   }
+   ```
+
+3. Business Logic Errors:
+   ```json
+   {
+     "status": 400,
+     "message": "Current password is incorrect",
+     "error": ""
+   }
+   ```
 
 ## Seeder
 - To seed sample users and products, run:
