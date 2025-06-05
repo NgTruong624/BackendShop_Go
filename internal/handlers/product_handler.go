@@ -340,7 +340,7 @@ func (h *ProductHandler) UploadProductImage(c *gin.Context) {
 	}
 	ext := filepath.Ext(file.Filename)
 	filename := fmt.Sprintf("%d_%d%s", product.ID, time.Now().Unix(), ext)
-	uploadPath := filepath.Join("static", "uploads", filename) // Sửa tên biến để tránh nhầm lẫn
+	uploadPath := filepath.Join("static", "uploads", filename)
 	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
 		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Error saving file", err.Error()))
 		return

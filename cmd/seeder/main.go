@@ -86,8 +86,8 @@ func seedData(db *gorm.DB) error {
 	// Seed products
 	products := []models.Product{
 		{
-			Name:        "Laptop Gaming",
-			Description: "Laptop gaming cấu hình cao",
+			Name:        "Laptop",
+			Description: "Laptop gaming",
 			Price:       25000000,
 			Stock:       10,
 			Category:    "Electronics",
@@ -97,7 +97,7 @@ func seedData(db *gorm.DB) error {
 		},
 		{
 			Name:        "Smartphone",
-			Description: "Điện thoại thông minh mới nhất",
+			Description: "Điện thoại thông minh",
 			Price:       15000000,
 			Stock:       20,
 			Category:    "Electronics",

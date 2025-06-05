@@ -5,7 +5,7 @@ type Response struct {
 	Status  int         `json:"status"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Error   interface{} `json:"error,omitempty"`
 }
 
 // PaginatedResponse là cấu trúc response cho các API có phân trang
@@ -42,7 +42,7 @@ func NewResponse(status int, message string, data interface{}) Response {
 }
 
 // NewErrorResponse tạo một response lỗi
-func NewErrorResponse(status int, message string, err string) Response {
+func NewErrorResponse(status int, message string, err interface{}) Response {
 	return Response{
 		Status:  status,
 		Message: message,

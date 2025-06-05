@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/NgTruong624/project_backend/internal/models"
 	"github.com/NgTruong624/project_backend/internal/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -121,4 +123,78 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			CreatedAt: user.CreatedAt,
 		},
 	}))
+}
+
+// ChangePassword handles the password change request
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	var req models.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		// Handle validation errors
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			errors := make(map[string]string)
+			for _, e := range validationErrors {
+				field := e.Field()
+				switch field {
+				case "CurrentPassword":
+					if e.Tag() == "required" {
+						errors["current_password"] = "Current password is required."
+					}
+				case "NewPassword":
+					switch e.Tag() {
+					case "required":
+						errors["new_password"] = "New password is required."
+					case "min":
+						errors["new_password"] = fmt.Sprintf("New password must be at least %s characters long.", e.Param())
+					}
+				case "ConfirmNewPassword":
+					switch e.Tag() {
+					case "required":
+						errors["confirm_new_password"] = "Confirm password is required."
+					case "eqfield":
+						errors["confirm_new_password"] = "Confirm password must match new password."
+					}
+				}
+			}
+			c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Validation failed", errors))
+			return
+		}
+		// Handle non-validation errors
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Invalid request data", err.Error()))
+		return
+	}
+
+	// Get user ID from context (set by JWTMiddleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, utils.NewErrorResponse(http.StatusUnauthorized, "User not authenticated", ""))
+		return
+	}
+
+	// Get user from database
+	var user models.User
+	if err := h.db.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, utils.NewErrorResponse(http.StatusNotFound, "User not found", ""))
+		return
+	}
+
+	// Verify current password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.CurrentPassword)); err != nil {
+		c.JSON(http.StatusBadRequest, utils.NewErrorResponse(http.StatusBadRequest, "Current password is incorrect", ""))
+		return
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Failed to hash new password", err.Error()))
+		return
+	}
+
+	// Update password in database
+	if err := h.db.Model(&user).Update("password", string(hashedPassword)).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, utils.NewErrorResponse(http.StatusInternalServerError, "Failed to update password", err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.NewResponse(http.StatusOK, "Password changed successfully", nil))
 }
