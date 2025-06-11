@@ -96,21 +96,51 @@ Project_backend_Go/
 
 ## API Endpoints
 
-### Auth
-- `POST /api/v1/register` – Register new user
-- `POST /api/v1/login` – Login and get JWT token
-- `POST /api/v1/change-password` – Change user password (requires authentication)
+### Authentication & User Management
+- `POST /api/v1/auth/register` – Register new user
+- `POST /api/v1/auth/login` – Login and get JWT token
+- `PUT /api/v1/users/change-password` – Change user password (requires authentication)
 
-### Products
-- `GET /api/v1/products` – List products (with pagination/filter)
-- `GET /api/v1/products/:id` – Get product details
-- `POST /api/v1/products` – Create product (admin only)
-- `PUT /api/v1/products/:id` – Update product (admin only)
-- `DELETE /api/v1/products/:id` – Delete product (admin only)
-- `POST /api/v1/products/:id/upload` – Upload product image (admin only, multipart/form-data, field: image)
+### Products (Public)
+- `GET /api/v1/products` – List all products
+- `GET /api/v1/products/:id` – Get product details by ID
+
+### Products (Admin Only)
+- `POST /api/v1/products` – Create new product
+- `PUT /api/v1/products/:id` – Update existing product
+- `DELETE /api/v1/products/:id` – Delete product
+- `POST /api/v1/products/:id/upload` – Upload product image (multipart/form-data, field: image)
+
+### Admin Management
+- `GET /api/v1/admin/users` – Get list of all users (admin only)
 
 ### Static Files
 - Uploaded images are served at `/uploads/<filename>`
+- Static files are served with security headers:
+  - X-Content-Type-Options: nosniff
+  - X-Frame-Options: DENY
+  - Content-Security-Policy: default-src 'self'
+  - Cache-Control: public, max-age=31536000
+
+### API Status
+- `GET /api/v1/status` – Check API health status
+
+## Authentication
+
+The API uses JWT (JSON Web Tokens) for authentication. To access protected endpoints:
+
+1. Login using `/api/v1/auth/login` to get a JWT token
+2. Include the token in subsequent requests in the Authorization header:
+   ```
+   Authorization: Bearer <your_jwt_token>
+   ```
+
+### Role-Based Access Control
+- Regular users can only access public endpoints and their own user data
+- Admin users have additional access to:
+  - Product management (CRUD operations)
+  - User management
+  - Product image uploads
 
 ## Error Handling
 
