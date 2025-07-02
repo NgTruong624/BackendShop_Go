@@ -35,6 +35,9 @@ func SetupRouter(
 ) *gin.Engine {
 	router := gin.Default()
 
+	// Khởi tạo rate limiter
+	middleware.InitGlobalRateLimiter()
+	router.Use(middleware.RateLimitMiddleware())
 	// Cấu hình static file serving
 	router.Static("/uploads", "./static/uploads")
 
@@ -56,6 +59,14 @@ func SetupRouter(
 		// Status route
 		api.GET("/status", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		})
+
+		// Rate limit stats route (admin only)
+		api.GET("/rate-limit-stats", func(c *gin.Context) {
+			stats := middleware.GetGlobalRateLimiter().GetStats()
+			c.JSON(http.StatusOK, gin.H{
+				"rate_limit_stats": stats,
+			})
 		})
 
 		// Auth routes (Public)
