@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Build artifacts
+main
+*.exe
+
+# Test files
+*_test.go
+**/*_test.go
+
+# Static uploads (these should be mounted as volumes)
+static/uploads/*
+
+# Temporary files
+tmp/
+temp/
