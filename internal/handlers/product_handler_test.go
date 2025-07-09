@@ -361,12 +361,11 @@ func (h *TestProductHandler) UploadProductImage(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.NewResponse(http.StatusOK, "Image uploaded successfully", gin.H{"image_url": product.ImageURL}))
 }
 
-
 type ProductHandlerTestSuite struct {
 	suite.Suite
-	handler    *TestProductHandler
-	mockRepo   *MockProductRepository
-	router     *gin.Engine
+	handler     *TestProductHandler
+	mockRepo    *MockProductRepository
+	router      *gin.Engine
 	testProduct *models.Product
 }
 
@@ -374,13 +373,13 @@ func (suite *ProductHandlerTestSuite) SetupSuite() {
 	gin.SetMode(gin.TestMode)
 	suite.mockRepo = new(MockProductRepository)
 	suite.handler = NewTestProductHandler(suite.mockRepo)
-	
+
 	suite.router = gin.New()
-	
+
 	// Public routes
 	suite.router.GET("/products", suite.handler.GetProducts)
 	suite.router.GET("/products/:id", suite.handler.GetProduct)
-	
+
 	// Protected routes (simulate middleware)
 	protected := suite.router.Group("/admin")
 	protected.Use(func(c *gin.Context) {
@@ -393,7 +392,7 @@ func (suite *ProductHandlerTestSuite) SetupSuite() {
 	protected.PUT("/products/:id", suite.handler.UpdateProduct)
 	protected.DELETE("/products/:id", suite.handler.DeleteProduct)
 	protected.POST("/products/:id/upload", suite.handler.UploadProductImage)
-	
+
 	// Route for non-admin user
 	nonAdmin := suite.router.Group("/user")
 	nonAdmin.Use(func(c *gin.Context) {
@@ -404,7 +403,7 @@ func (suite *ProductHandlerTestSuite) SetupSuite() {
 	nonAdmin.POST("/products", suite.handler.CreateProduct)
 	nonAdmin.PUT("/products/:id", suite.handler.UpdateProduct)
 	nonAdmin.DELETE("/products/:id", suite.handler.DeleteProduct)
-	
+
 	// Test data
 	suite.testProduct = &models.Product{
 		ID:          1,
@@ -432,44 +431,44 @@ func (suite *ProductHandlerTestSuite) SetupTest() {
 func (suite *ProductHandlerTestSuite) TestGetProducts_Success() {
 	// Mock data
 	products := []models.Product{*suite.testProduct}
-	
+
 	suite.mockRepo.On("GetAll", mock.AnythingOfType("*models.ProductQueryParams")).
 		Return(products, int64(1), nil)
-	
+
 	req, _ := http.NewRequest("GET", "/products", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
-	
+
 	assert.Equal(suite.T(), float64(200), response["status"])
 	assert.Equal(suite.T(), "Products retrieved successfully", response["message"])
-	
+
 	data := response["data"].([]interface{})
 	assert.Len(suite.T(), data, 1)
-	
+
 	product := data[0].(map[string]interface{})
 	assert.Equal(suite.T(), "Test Product", product["name"])
 	assert.Equal(suite.T(), 99.99, product["price"])
-	
+
 	suite.mockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *ProductHandlerTestSuite) TestGetProducts_WithQueryParams() {
 	products := []models.Product{*suite.testProduct}
-	
+
 	suite.mockRepo.On("GetAll", mock.MatchedBy(func(query *models.ProductQueryParams) bool {
 		return query.Search == "test" && query.Category == "Electronics" && query.Page == 2 && query.Limit == 5
 	})).Return(products, int64(1), nil)
-	
+
 	req, _ := http.NewRequest("GET", "/products?search=test&category=Electronics&page=2&limit=5", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 	suite.mockRepo.AssertExpectations(suite.T())
 }
@@ -478,9 +477,9 @@ func (suite *ProductHandlerTestSuite) TestGetProducts_InvalidPriceRange() {
 	req, _ := http.NewRequest("GET", "/products?min_price=100&max_price=50", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
@@ -490,11 +489,11 @@ func (suite *ProductHandlerTestSuite) TestGetProducts_InvalidPriceRange() {
 func (suite *ProductHandlerTestSuite) TestGetProducts_DatabaseError() {
 	suite.mockRepo.On("GetAll", mock.AnythingOfType("*models.ProductQueryParams")).
 		Return([]models.Product{}, int64(0), assert.AnError)
-	
+
 	req, _ := http.NewRequest("GET", "/products", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
 	suite.mockRepo.AssertExpectations(suite.T())
 }
@@ -505,39 +504,39 @@ func (suite *ProductHandlerTestSuite) TestGetProducts_DatabaseError() {
 
 func (suite *ProductHandlerTestSuite) TestGetProduct_Success() {
 	suite.mockRepo.On("GetByID", uint(1)).Return(suite.testProduct, nil)
-	
+
 	req, _ := http.NewRequest("GET", "/products/1", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
-	
+
 	assert.Equal(suite.T(), "Product retrieved successfully", response["message"])
-	
+
 	data := response["data"].(map[string]interface{})
 	assert.Equal(suite.T(), "Test Product", data["name"])
-	
+
 	suite.mockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *ProductHandlerTestSuite) TestGetProduct_NotFound() {
 	suite.mockRepo.On("GetByID", uint(999)).Return(nil, gorm.ErrRecordNotFound)
-	
+
 	req, _ := http.NewRequest("GET", "/products/999", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Product not found", response["message"])
-	
+
 	suite.mockRepo.AssertExpectations(suite.T())
 }
 
@@ -545,7 +544,7 @@ func (suite *ProductHandlerTestSuite) TestGetProduct_InvalidID() {
 	req, _ := http.NewRequest("GET", "/products/invalid", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
@@ -562,28 +561,28 @@ func (suite *ProductHandlerTestSuite) TestCreateProduct_Success() {
 		ImageURL:    "/uploads/new.jpg",
 		Category:    "Books",
 	}
-	
+
 	suite.mockRepo.On("CheckIfNameExists", "New Product", uint(0)).Return(false, nil)
 	suite.mockRepo.On("Create", mock.AnythingOfType("*models.Product")).Return(nil)
-	
+
 	jsonData, _ := json.Marshal(createReq)
 	req, _ := http.NewRequest("POST", "/admin/products", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
-	
+
 	assert.Equal(suite.T(), "Product created successfully", response["message"])
-	
+
 	data := response["data"].(map[string]interface{})
 	assert.Equal(suite.T(), "New Product", data["name"])
-	
+
 	suite.mockRepo.AssertExpectations(suite.T())
 }
 
@@ -595,23 +594,23 @@ func (suite *ProductHandlerTestSuite) TestCreateProduct_NameAlreadyExists() {
 		Stock:       10,
 		Category:    "Electronics",
 	}
-	
+
 	suite.mockRepo.On("CheckIfNameExists", "Existing Product", uint(0)).Return(true, nil)
-	
+
 	jsonData, _ := json.Marshal(createReq)
 	req, _ := http.NewRequest("POST", "/admin/products", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusConflict, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Product name already exists", response["message"])
-	
+
 	suite.mockRepo.AssertExpectations(suite.T())
 }
 
@@ -623,16 +622,16 @@ func (suite *ProductHandlerTestSuite) TestCreateProduct_Forbidden() {
 		Stock:       10,
 		Category:    "Electronics",
 	}
-	
+
 	jsonData, _ := json.Marshal(createReq)
 	req, _ := http.NewRequest("POST", "/user/products", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusForbidden, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
@@ -641,17 +640,17 @@ func (suite *ProductHandlerTestSuite) TestCreateProduct_Forbidden() {
 
 func (suite *ProductHandlerTestSuite) TestCreateProduct_InvalidRequest() {
 	invalidReq := map[string]interface{}{
-		"name": "", // Empty name should fail validation
+		"name":  "",  // Empty name should fail validation
 		"price": -10, // Negative price should fail
 	}
-	
+
 	jsonData, _ := json.Marshal(invalidReq)
 	req, _ := http.NewRequest("POST", "/admin/products", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 }
 
@@ -666,25 +665,25 @@ func (suite *ProductHandlerTestSuite) TestUpdateProduct_Success() {
 		Price:       199.99,
 		Stock:       30,
 	}
-	
+
 	suite.mockRepo.On("GetByID", uint(1)).Return(suite.testProduct, nil)
 	suite.mockRepo.On("CheckIfNameExists", "Updated Product", uint(1)).Return(false, nil)
 	suite.mockRepo.On("Update", mock.AnythingOfType("*models.Product")).Return(nil)
-	
+
 	jsonData, _ := json.Marshal(updateReq)
 	req, _ := http.NewRequest("PUT", "/admin/products/1", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Product updated successfully", response["message"])
-	
+
 	suite.mockRepo.AssertExpectations(suite.T())
 }
 
@@ -692,16 +691,16 @@ func (suite *ProductHandlerTestSuite) TestUpdateProduct_NotFound() {
 	updateReq := models.UpdateProductRequest{
 		Name: "Updated Product",
 	}
-	
+
 	suite.mockRepo.On("GetByID", uint(999)).Return(nil, gorm.ErrRecordNotFound)
-	
+
 	jsonData, _ := json.Marshal(updateReq)
 	req, _ := http.NewRequest("PUT", "/admin/products/999", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 	suite.mockRepo.AssertExpectations(suite.T())
 }
@@ -712,28 +711,28 @@ func (suite *ProductHandlerTestSuite) TestUpdateProduct_NotFound() {
 
 func (suite *ProductHandlerTestSuite) TestDeleteProduct_Success() {
 	suite.mockRepo.On("Delete", uint(1)).Return(nil)
-	
+
 	req, _ := http.NewRequest("DELETE", "/admin/products/1", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Product deleted successfully", response["message"])
-	
+
 	suite.mockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *ProductHandlerTestSuite) TestDeleteProduct_DatabaseError() {
 	suite.mockRepo.On("Delete", uint(1)).Return(assert.AnError)
-	
+
 	req, _ := http.NewRequest("DELETE", "/admin/products/1", nil)
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
 	suite.mockRepo.AssertExpectations(suite.T())
 }
@@ -746,46 +745,46 @@ func (suite *ProductHandlerTestSuite) TestUploadProductImage_Success() {
 	// Create uploads directory if it doesn't exist
 	os.MkdirAll("static/uploads", 0755)
 	defer os.RemoveAll("static") // Clean up after test
-	
+
 	suite.mockRepo.On("GetByID", uint(1)).Return(suite.testProduct, nil)
 	suite.mockRepo.On("Update", mock.AnythingOfType("*models.Product")).Return(nil)
-	
+
 	// Create a fake image file
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	
+
 	part, err := writer.CreateFormFile("image", "test.jpg")
 	assert.NoError(suite.T(), err)
-	
+
 	// Write fake image data
 	part.Write([]byte("fake image data"))
 	writer.Close()
-	
+
 	req, _ := http.NewRequest("POST", "/admin/products/1/upload", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	
+
 	var response map[string]interface{}
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Image uploaded successfully", response["message"])
-	
+
 	suite.mockRepo.AssertExpectations(suite.T())
 }
 
 func (suite *ProductHandlerTestSuite) TestUploadProductImage_NoFile() {
 	req, _ := http.NewRequest("POST", "/admin/products/1/upload", nil)
 	req.Header.Set("Content-Type", "multipart/form-data")
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
@@ -794,22 +793,22 @@ func (suite *ProductHandlerTestSuite) TestUploadProductImage_NoFile() {
 
 func (suite *ProductHandlerTestSuite) TestUploadProductImage_ProductNotFound() {
 	suite.mockRepo.On("GetByID", uint(999)).Return(nil, gorm.ErrRecordNotFound)
-	
+
 	// Create a fake image file
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	
+
 	part, err := writer.CreateFormFile("image", "test.jpg")
 	assert.NoError(suite.T(), err)
 	part.Write([]byte("fake image data"))
 	writer.Close()
-	
+
 	req, _ := http.NewRequest("POST", "/admin/products/999/upload", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	
+
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-	
+
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 	suite.mockRepo.AssertExpectations(suite.T())
 }
@@ -817,4 +816,4 @@ func (suite *ProductHandlerTestSuite) TestUploadProductImage_ProductNotFound() {
 // Run the test suite
 func TestProductHandlerTestSuite(t *testing.T) {
 	suite.Run(t, new(ProductHandlerTestSuite))
-} 
+}

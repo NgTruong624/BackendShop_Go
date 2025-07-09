@@ -65,7 +65,7 @@ func (suite *AuthHandlerTestSuite) SetupTest() {
 // TestLogin_Success kiểm tra đăng nhập thành công
 func (suite *AuthHandlerTestSuite) TestLogin_Success() {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-	
+
 	// Mock database query để tìm user
 	suite.mock.ExpectQuery(`SELECT \* FROM "users" WHERE username = \$1 ORDER BY "users"\."id" LIMIT \$2`).
 		WithArgs("testuser", 1).
@@ -146,7 +146,7 @@ func (suite *AuthHandlerTestSuite) TestLogin_InvalidUsername() {
 // TestLogin_InvalidPassword kiểm tra đăng nhập với password sai
 func (suite *AuthHandlerTestSuite) TestLogin_InvalidPassword() {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("correctpassword"), bcrypt.DefaultCost)
-	
+
 	// Mock database query để tìm user
 	suite.mock.ExpectQuery(`SELECT \* FROM "users" WHERE username = \$1 ORDER BY "users"\."id" LIMIT \$2`).
 		WithArgs("testuser", 1).
@@ -360,4 +360,4 @@ func (suite *AuthHandlerTestSuite) TestRegister_PasswordTooShort() {
 // Chạy test suite
 func TestAuthHandlerTestSuite(t *testing.T) {
 	suite.Run(t, new(AuthHandlerTestSuite))
-} 
+}
