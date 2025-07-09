@@ -64,7 +64,8 @@ func (suite *AuthHandlerTestSuite) SetupTest() {
 
 // TestLogin_Success kiểm tra đăng nhập thành công
 func (suite *AuthHandlerTestSuite) TestLogin_Success() {
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	assert.NoError(suite.T(), err)
 
 	// Mock database query để tìm user
 	suite.mock.ExpectQuery(`SELECT \* FROM "users" WHERE username = \$1 ORDER BY "users"\."id" LIMIT \$2`).
@@ -77,8 +78,10 @@ func (suite *AuthHandlerTestSuite) TestLogin_Success() {
 		Password: "password123",
 	}
 
-	jsonData, _ := json.Marshal(loginRequest)
-	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(loginRequest)
+	assert.NoError(suite.T(), err)
+	req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonData))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -87,7 +90,7 @@ func (suite *AuthHandlerTestSuite) TestLogin_Success() {
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(200), response["status"])
@@ -122,8 +125,10 @@ func (suite *AuthHandlerTestSuite) TestLogin_InvalidUsername() {
 		Password: "password123",
 	}
 
-	jsonData, _ := json.Marshal(loginRequest)
-	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(loginRequest)
+	assert.NoError(suite.T(), err)
+	req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonData))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -132,7 +137,7 @@ func (suite *AuthHandlerTestSuite) TestLogin_InvalidUsername() {
 	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(401), response["status"])
@@ -145,7 +150,8 @@ func (suite *AuthHandlerTestSuite) TestLogin_InvalidUsername() {
 
 // TestLogin_InvalidPassword kiểm tra đăng nhập với password sai
 func (suite *AuthHandlerTestSuite) TestLogin_InvalidPassword() {
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("correctpassword"), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("correctpassword"), bcrypt.DefaultCost)
+	assert.NoError(suite.T(), err)
 
 	// Mock database query để tìm user
 	suite.mock.ExpectQuery(`SELECT \* FROM "users" WHERE username = \$1 ORDER BY "users"\."id" LIMIT \$2`).
@@ -158,8 +164,10 @@ func (suite *AuthHandlerTestSuite) TestLogin_InvalidPassword() {
 		Password: "wrongpassword",
 	}
 
-	jsonData, _ := json.Marshal(loginRequest)
-	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(loginRequest)
+	assert.NoError(suite.T(), err)
+	req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonData))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -168,7 +176,7 @@ func (suite *AuthHandlerTestSuite) TestLogin_InvalidPassword() {
 	assert.Equal(suite.T(), http.StatusUnauthorized, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(401), response["status"])
@@ -181,7 +189,8 @@ func (suite *AuthHandlerTestSuite) TestLogin_InvalidPassword() {
 
 // TestLogin_InvalidJSON kiểm tra đăng nhập với JSON không hợp lệ
 func (suite *AuthHandlerTestSuite) TestLogin_InvalidJSON() {
-	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer([]byte("invalid json")))
+	req, err := http.NewRequest("POST", "/login", bytes.NewBuffer([]byte("invalid json")))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -190,7 +199,7 @@ func (suite *AuthHandlerTestSuite) TestLogin_InvalidJSON() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(400), response["status"])
@@ -204,8 +213,10 @@ func (suite *AuthHandlerTestSuite) TestLogin_MissingFields() {
 		Password: "password123",
 	}
 
-	jsonData, _ := json.Marshal(loginRequest)
-	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(loginRequest)
+	assert.NoError(suite.T(), err)
+	req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(jsonData))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -214,7 +225,7 @@ func (suite *AuthHandlerTestSuite) TestLogin_MissingFields() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(400), response["status"])
@@ -242,8 +253,10 @@ func (suite *AuthHandlerTestSuite) TestRegister_Success() {
 		FullName: "New User",
 	}
 
-	jsonData, _ := json.Marshal(registerRequest)
-	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(registerRequest)
+	assert.NoError(suite.T(), err)
+	req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonData))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -252,7 +265,7 @@ func (suite *AuthHandlerTestSuite) TestRegister_Success() {
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(201), response["status"])
@@ -285,8 +298,10 @@ func (suite *AuthHandlerTestSuite) TestRegister_EmailAlreadyExists() {
 		FullName: "New User",
 	}
 
-	jsonData, _ := json.Marshal(registerRequest)
-	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(registerRequest)
+	assert.NoError(suite.T(), err)
+	req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonData))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -295,7 +310,7 @@ func (suite *AuthHandlerTestSuite) TestRegister_EmailAlreadyExists() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(400), response["status"])
@@ -314,8 +329,10 @@ func (suite *AuthHandlerTestSuite) TestRegister_InvalidEmail() {
 		FullName: "New User",
 	}
 
-	jsonData, _ := json.Marshal(registerRequest)
-	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(registerRequest)
+	assert.NoError(suite.T(), err)
+	req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonData))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -324,7 +341,7 @@ func (suite *AuthHandlerTestSuite) TestRegister_InvalidEmail() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(400), response["status"])
@@ -340,8 +357,10 @@ func (suite *AuthHandlerTestSuite) TestRegister_PasswordTooShort() {
 		FullName: "New User",
 	}
 
-	jsonData, _ := json.Marshal(registerRequest)
-	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonData))
+	jsonData, err := json.Marshal(registerRequest)
+	assert.NoError(suite.T(), err)
+	req, err := http.NewRequest("POST", "/register", bytes.NewBuffer(jsonData))
+	assert.NoError(suite.T(), err)
 	req.Header.Set("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -350,7 +369,7 @@ func (suite *AuthHandlerTestSuite) TestRegister_PasswordTooShort() {
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
 
 	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
+	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), float64(400), response["status"])
