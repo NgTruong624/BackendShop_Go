@@ -1,29 +1,6 @@
 # Project Backend
 
-## Project Structure Guide
-
-This project is a RESTful API backend built with Go, Gin, and PostgreSQL.
-
-### Main Entry Points
-- `cmd/api/main.go`: Main API server entry point. Loads configuration from `.env` and starts the HTTP server.
-- `cmd/seeder/main.go`: Seeder entry point for populating the database with sample data.
-
-### Configuration
-- `.env`: Environment variables for database, JWT, and server configuration. See `.env.example` for template.
-
-### Key Directories
-- `internal/handlers/`: HTTP handlers for authentication, product, and admin endpoints.
-- `internal/middleware/`: Middleware, including JWT authentication.
-- `internal/models/`: Data models for users and products, plus request/response schemas.
-- `internal/repository/`: Data access layer for users and products.
-- `internal/utils/`: Utility functions (e.g., response formatting, error handling).
-- `static/uploads/`: Uploaded product images, served at `/uploads/<filename>`.
-
-### Development
-- Run the API: `go run cmd/api/main.go`
-- Seed the database: `go run cmd/seeder/main.go` or set `RUN_SEEDER=true` in `.env` and start the API.
-
----
+A RESTful API backend built with Go, Gin, and PostgreSQL, fully containerized with Docker for easy setup and deployment.
 
 ## Features
 
@@ -38,102 +15,51 @@ This project is a RESTful API backend built with Go, Gin, and PostgreSQL.
 - Database seeder for sample data
 - Enhanced error handling with detailed validation messages
 
-## Project Structure
-
-```
-Project_backend_Go/
-├── cmd/
-│   ├── api/         # Main API server
-│   └── seeder/      # Seeder for sample data
-├── internal/
-│   ├── handlers/    # HTTP handlers
-│   ├── middleware/  # Middleware (JWT, etc.)
-│   ├── models/      # Data models
-│   ├── repository/  # Data access layer
-│   └── utils/       # Utilities (response, error handling)
-├── static/uploads/  # Uploaded product images
-├── .env             # Environment variables
-├── go.mod, go.sum   # Go modules
-└── README.md
-```
-
 ## Prerequisites
 
-### For Traditional Setup:
-- Go 1.23 or higher
-- PostgreSQL
-- Git
+- **Docker & Docker Compose**: For running the application stack.
+- **Git**: For cloning the repository.
+- **Go & PostgreSQL** (Optional): For local development outside of Docker.
 
-### For Docker Setup (Recommended):
-- Docker 20.10+
-- Docker Compose 2.0+
-- Git
+## 🚀 Quick Start with Docker
 
-## Setup & Run
+This is the recommended way to run the project for development and production.
 
-### 🐳 Docker Setup (Recommended)
+1.  **Clone the repository:**
+    ```sh
+    git clone <repo-url>
+    cd Project_backend_Go
+    ```
 
-1. Clone the repository:
-   ```sh
-   git clone <repo-url>
-   cd Project_backend_Go
-   ```
+2.  **Start the services:**
+    Use the `Makefile` for convenience:
+    ```sh
+    # Start all services (API + PostgreSQL + pgAdmin) in the background
+    make start
+    ```
+    Alternatively, use Docker Compose directly:
+    ```sh
+    # Start in detached mode
+    docker-compose up -d
+    ```
 
-2. Quick start with Docker:
-   ```sh
-   # Start all services (API + PostgreSQL + pgAdmin)
-   make start
-   
-   # Or using docker-compose directly
-   docker-compose up -d
-   ```
+3.  **Access the services:**
+    - **API Server**: `http://localhost:8080`
+    - **API Status**: `http://localhost:8080/api/v1/status`
+    - **pgAdmin (Database UI)**: `http://localhost:5050` (Login: `admin@admin.com` / `admin`)
 
-3. Access services:
-   - **API**: http://localhost:8080
-   - **pgAdmin**: http://localhost:5050 (admin@admin.com / admin)
-   - **API Status**: http://localhost:8080/api/v1/status
+4.  **Manage the application:**
+    ```sh
+    make help          # Show all available commands
+    make status        # Check service status
+    make logs          # View application logs
+    make stop          # Stop all services
+    make clean         # Stop and remove all containers, networks, and volumes
+    ```
 
-4. Management commands:
-   ```sh
-   make help          # Show all available commands
-   make status        # Check service status
-   make logs          # View logs
-   make stop          # Stop services
-   make clean         # Clean up everything
-   ```
+📖 **For more details on the Docker setup, see [DOCKER_GUIDE.md](DOCKER_GUIDE.md).**
 
-📖 **For detailed Docker documentation, see [DOCKER_GUIDE.md](DOCKER_GUIDE.md)**
-
-### 🔧 Traditional Setup
-
-1. Clone the repository:
-   ```sh
-   git clone <repo-url>
-   cd Project_backend_Go
-   ```
-2. Create a `.env` file with your database and JWT settings:
-   ```env
-   DB_HOST=localhost
-   DB_USER=youruser
-   DB_PASSWORD=yourpassword
-   DB_NAME=yourdb
-   DB_PORT=5432
-   JWT_SECRET=your_jwt_secret
-   PORT=8080
-   # Optional: RUN_SEEDER=true to seed data on API start
-   ```
-3. Install dependencies:
-   ```sh
-   go mod download
-   ```
-4. Run database migrations and seed sample data:
-   ```sh
-   go run cmd/seeder/main.go
-   ```
-5. Start the API server:
-   ```sh
-   go run cmd/api/main.go
-   ```
+---
 
 ## API Endpoints
 
@@ -150,86 +76,89 @@ Project_backend_Go/
 - `POST /api/v1/products` – Create new product
 - `PUT /api/v1/products/:id` – Update existing product
 - `DELETE /api/v1/products/:id` – Delete product
-- `POST /api/v1/products/:id/upload` – Upload product image (multipart/form-data, field: image)
+- `POST /api/v1/products/:id/upload` – Upload product image (multipart/form-data, field: `image`)
 
 ### Admin Management
 - `GET /api/v1/admin/users` – Get list of all users (admin only)
 
-### Static Files
-- Uploaded images are served at `/uploads/<filename>`
-- Static files are served with security headers:
-  - X-Content-Type-Options: nosniff
-  - X-Frame-Options: DENY
-  - Content-Security-Policy: default-src 'self'
-  - Cache-Control: public, max-age=31536000
+### Static Files & Security
+- Uploaded images are served from `/uploads/<filename>`.
+- The static file server includes security headers like `X-Content-Type-Options`, `X-Frame-Options`, and a strict `Content-Security-Policy`.
 
 ### API Status
-- `GET /api/v1/status` – Check API health status
+- `GET /api/v1/status` – Check API health status.
 
-## Authentication
+---
 
-The API uses JWT (JSON Web Tokens) for authentication. To access protected endpoints:
+## Project Details
 
-1. Login using `/api/v1/auth/login` to get a JWT token
-2. Include the token in subsequent requests in the Authorization header:
-   ```
-   Authorization: Bearer <your_jwt_token>
-   ```
+### Authentication
+The API uses JWT for authentication. After logging in, include the token in the `Authorization` header as a Bearer token.
+```
+Authorization: Bearer <your_jwt_token>
+```
+Access is role-based (Admin/User). Admins have extended privileges for managing products and users.
 
-### Role-Based Access Control
-- Regular users can only access public endpoints and their own user data
-- Admin users have additional access to:
-  - Product management (CRUD operations)
-  - User management
-  - Product image uploads
+### Error Handling
+The API returns detailed JSON error responses for validation, authentication, and business logic errors, including a `status`, `message`, and structured `error` field.
 
-## Error Handling
+### Database Seeder
+The database is automatically seeded with sample users and products when the application starts with `RUN_SEEDER=true` (the default in `docker-compose.yml`). You can also run the seeder manually.
 
-The API provides detailed error responses for various scenarios:
+### Project Structure
+```
+Project_backend_Go/
+├── cmd/
+│   ├── api/         # Main API server
+│   └── seeder/      # Seeder for sample data
+├── internal/
+│   ├── handlers/    # HTTP handlers
+│   ├── middleware/  # Middleware (JWT, etc.)
+│   ├── models/      # Data models
+│   ├── repository/  # Data access layer
+│   └── utils/       # Utilities (response, error handling)
+├── static/uploads/  # Uploaded product images
+├── docker-compose.yml # Docker services definition
+├── Dockerfile       # Docker build instructions for the Go app
+├── .env.example     # Environment variable template
+└── README.md
+```
 
-1. Validation Errors:
-   ```json
-   {
-     "status": 400,
-     "message": "Validation failed",
-     "error": {
-       "current_password": "Current password is required.",
-       "new_password": "New password must be at least 6 characters long.",
-       "confirm_new_password": "Confirm password must match new password."
-     }
-   }
-   ```
+---
 
-2. Authentication Errors:
-   ```json
-   {
-     "status": 401,
-     "message": "User not authenticated",
-     "error": ""
-   }
-   ```
+## 🔧 Development without Docker (Manual Setup)
 
-3. Business Logic Errors:
-   ```json
-   {
-     "status": 400,
-     "message": "Current password is incorrect",
-     "error": ""
-   }
-   ```
+If you prefer to run the Go application directly on your host machine:
 
-## Seeder
-- To seed sample users and products, run:
-  ```sh
-  go run cmd/seeder/main.go
-  ```
-- Or set `RUN_SEEDER=true` in `.env` to seed automatically when starting the API.
+1.  **Prerequisites**:
+    - Go 1.23 or higher
+    - PostgreSQL
+    - Git
 
-## Product Image Upload
-- Only admin users can upload images for products.
-- Use endpoint: `POST /api/v1/products/:id/upload` with form-data field `image` (accepts jpg, png, gif).
-- Uploaded files are saved in `static/uploads/` and accessible via `/uploads/<filename>`.
+2.  **Setup**:
+    ```sh
+    # Clone the repo
+    git clone <repo-url>
+    cd Project_backend_Go
+
+    # Create and configure your .env file
+    cp .env.example .env
+    # Edit .env with your local database credentials
+
+    # Install Go dependencies
+    go mod download
+    ```
+
+3.  **Run the application**:
+    ```sh
+    # Run database migrations and seeder
+    go run cmd/seeder/main.go
+
+    # Start the API server
+    go run cmd/api/main.go
+    ```
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.
+ 
