@@ -59,11 +59,52 @@ Project_backend_Go/
 
 ## Prerequisites
 
+### For Traditional Setup:
 - Go 1.23 or higher
 - PostgreSQL
 - Git
 
+### For Docker Setup (Recommended):
+- Docker 20.10+
+- Docker Compose 2.0+
+- Git
+
 ## Setup & Run
+
+### 🐳 Docker Setup (Recommended)
+
+1. Clone the repository:
+   ```sh
+   git clone <repo-url>
+   cd Project_backend_Go
+   ```
+
+2. Quick start with Docker:
+   ```sh
+   # Start all services (API + PostgreSQL + pgAdmin)
+   make start
+   
+   # Or using docker-compose directly
+   docker-compose up -d
+   ```
+
+3. Access services:
+   - **API**: http://localhost:8080
+   - **pgAdmin**: http://localhost:5050 (admin@admin.com / admin)
+   - **API Status**: http://localhost:8080/api/v1/status
+
+4. Management commands:
+   ```sh
+   make help          # Show all available commands
+   make status        # Check service status
+   make logs          # View logs
+   make stop          # Stop services
+   make clean         # Clean up everything
+   ```
+
+📖 **For detailed Docker documentation, see [DOCKER_GUIDE.md](DOCKER_GUIDE.md)**
+
+### 🔧 Traditional Setup
 
 1. Clone the repository:
    ```sh

@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: project_postgres
+    environment:
+      POSTGRES_USER: project_user
+      POSTGRES_PASSWORD: project_password
+      POSTGRES_DB: project_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - project_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U project_user -d project_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Go API Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: project_api
+    environment:
+      DB_HOST: postgres
+      DB_USER: project_user
+      DB_PASSWORD: project_password
+      DB_NAME: project_db
+      DB_PORT: 5432
+      JWT_SECRET: your_super_secret_jwt_key_change_in_production
+      PORT: 8080
+      RUN_SEEDER: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./static/uploads:/root/static/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - project_network
+    restart: unless-stopped
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: project_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - project_network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+
+networks:
+  project_network:
+    driver: bridge
