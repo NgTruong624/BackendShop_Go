@@ -41,6 +41,7 @@ services:
       - "8080:8080"
     volumes:
       - ./static/uploads:/root/static/uploads
+      - ./.env:/root/.env  # Mount file .env vào container
     depends_on:
       postgres:
         condition: service_healthy
