@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,7 +30,7 @@ type RateLimitConfig struct {
 type RateLimiter struct {
 	clients       map[string]*ClientInfo
 	mu            sync.RWMutex
-	configs       map[string]RateLimitConfig // Endpoint-specific configs
+	configs       map[string]RateLimitConfig
 	cleanupTicker *time.Ticker
 	ctx           context.Context
 	cancel        context.CancelFunc
@@ -48,9 +49,9 @@ func NewRateLimiter() *RateLimiter {
 
 	// Cấu hình mặc định cho các loại endpoint
 	rl.configs["default"] = RateLimitConfig{Rate: 10, Burst: 20}
-	rl.configs["auth"] = RateLimitConfig{Rate: 0.1, Burst: 3}
-	rl.configs["public"] = RateLimitConfig{Rate: 1.67, Burst: 100}
-	rl.configs["admin"] = RateLimitConfig{Rate: 0.83, Burst: 50}
+	rl.configs["auth"] = RateLimitConfig{Rate: 0.1, Burst: 5}
+	rl.configs["public"] = RateLimitConfig{Rate: 0.1, Burst: 100}
+	rl.configs["admin"] = RateLimitConfig{Rate: 0.1, Burst: 50}
 
 	// Bắt đầu cleanup routine
 	rl.startCleanup()
@@ -88,18 +89,21 @@ func (rl *RateLimiter) cleanupInactiveClients() {
 
 // getConfigForEndpoint lấy cấu hình rate limit cho endpoint
 func (rl *RateLimiter) getConfigForEndpoint(path string) RateLimitConfig {
+	// Loại bỏ dấu '/' cuối nếu có
+	cleanPath := strings.TrimSuffix(path, "/")
+
 	// Auth endpoints
-	if path == "/api/v1/auth/login" || path == "/api/v1/auth/register" {
+	if cleanPath == "/api/v1/auth/login" || cleanPath == "/api/v1/auth/register" {
 		return rl.configs["auth"]
 	}
 
 	// Admin endpoints
-	if path == "/api/v1/admin/users" {
+	if cleanPath == "/api/v1/admin/users" {
 		return rl.configs["admin"]
 	}
 
 	// Public endpoints
-	if path == "/api/v1/products" || path == "/api/v1/status" {
+	if cleanPath == "/api/v1/products" || cleanPath == "/api/v1/status" {
 		return rl.configs["public"]
 	}
 
@@ -171,9 +175,12 @@ func (rl *RateLimiter) RateLimitMiddleware() gin.HandlerFunc {
 		rl.mu.Unlock()
 
 		// Thêm headers cho response
-		c.Header("X-RateLimit-Limit", fmt.Sprintf("%.2f", float64(config.Rate)))
+		remaining := int(client.Limiter.TokensAt(time.Now()))
+		reset := client.Limiter.Reserve().Delay() / time.Second
+		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", config.Burst))
 		c.Header("X-RateLimit-Burst", fmt.Sprintf("%d", config.Burst))
-		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%.2f", client.Limiter.TokensAt(time.Now())))
+		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
+		c.Header("X-RateLimit-Reset", fmt.Sprintf("%d", reset))
 
 		c.Next()
 	}

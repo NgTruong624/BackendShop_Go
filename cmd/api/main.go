@@ -59,7 +59,7 @@ func main() {
 	if jwtSecret == "" {
 		log.Fatal("JWT_SECRET environment variable is required")
 	}
-	
+
 	authHandler := handlers.NewAuthHandler(db, jwtSecret)
 	productHandler := handlers.NewProductHandler(db)
 	adminHandler := handlers.NewAdminHandler(db)
@@ -73,7 +73,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	
+
 	log.Printf("Starting server on port %s", port)
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
