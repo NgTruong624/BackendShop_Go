@@ -743,7 +743,8 @@ func (suite *ProductHandlerTestSuite) TestDeleteProduct_DatabaseError() {
 
 func (suite *ProductHandlerTestSuite) TestUploadProductImage_Success() {
 	// Create uploads directory if it doesn't exist
-	os.MkdirAll("static/uploads", 0755)
+	err := os.MkdirAll("static/uploads", 0755)
+	assert.NoError(suite.T(), err)
 	defer os.RemoveAll("static") // Clean up after test
 
 	suite.mockRepo.On("GetByID", uint(1)).Return(suite.testProduct, nil)
@@ -757,7 +758,8 @@ func (suite *ProductHandlerTestSuite) TestUploadProductImage_Success() {
 	assert.NoError(suite.T(), err)
 
 	// Write fake image data
-	part.Write([]byte("fake image data"))
+	_, err = part.Write([]byte("fake image data"))
+	assert.NoError(suite.T(), err)
 	writer.Close()
 
 	req, _ := http.NewRequest("POST", "/admin/products/1/upload", body)
@@ -800,7 +802,8 @@ func (suite *ProductHandlerTestSuite) TestUploadProductImage_ProductNotFound() {
 
 	part, err := writer.CreateFormFile("image", "test.jpg")
 	assert.NoError(suite.T(), err)
-	part.Write([]byte("fake image data"))
+	_, err = part.Write([]byte("fake image data"))
+	assert.NoError(suite.T(), err)
 	writer.Close()
 
 	req, _ := http.NewRequest("POST", "/admin/products/999/upload", body)
