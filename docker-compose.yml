@@ -6,18 +6,17 @@ services:
     image: postgres:15-alpine
     container_name: project_postgres
     environment:
-      POSTGRES_USER: project_user
-      POSTGRES_PASSWORD: project_password
-      POSTGRES_DB: project_db
+      POSTGRES_USER: charles
+      POSTGRES_PASSWORD: 0616
+      POSTGRES_DB: shop_backend_go 
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - project_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U project_user -d project_db"]
+      test: ["CMD-SHELL", "pg_isready -U charles -d shop_backend_go"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,18 +29,18 @@ services:
     container_name: project_api
     environment:
       DB_HOST: postgres
-      DB_USER: project_user
-      DB_PASSWORD: project_password
-      DB_NAME: project_db
+      DB_USER: charles
+      DB_PASSWORD: 0616
+      DB_NAME: shop_backend_go
       DB_PORT: 5432
-      JWT_SECRET: your_super_secret_jwt_key_change_in_production
+      JWT_SECRET: f16c0e72-6b1f-4932-bfa0-468e7a3ec499
       PORT: 8080
       RUN_SEEDER: "true"
     ports:
       - "8080:8080"
     volumes:
       - ./static/uploads:/root/static/uploads
-      - ./.env:/root/.env  # Mount file .env vào container
+      # Removed: ./.env:/root/.env
     depends_on:
       postgres:
         condition: service_healthy

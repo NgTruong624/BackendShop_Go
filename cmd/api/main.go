@@ -17,14 +17,16 @@ import (
 )
 
 func main() {
-	// Load .env file
-	if err := godotenv.Load("/root/.env"); err != nil {
-		log.Fatal("Error loading .env file")
+	// Load .env file - không crash nếu không tìm thấy
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: Could not load .env file, using environment variables")
+	} else {
+		log.Println("Successfully loaded .env file")
 	}
 
 	// Kết nối database
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=redis",
 		os.Getenv("DB_HOST"),
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWORD"),
@@ -54,6 +56,10 @@ func main() {
 
 	// Khởi tạo handlers và middleware
 	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is required")
+	}
+	
 	authHandler := handlers.NewAuthHandler(db, jwtSecret)
 	productHandler := handlers.NewProductHandler(db)
 	adminHandler := handlers.NewAdminHandler(db)
@@ -67,6 +73,8 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+	
+	log.Printf("Starting server on port %s", port)
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
