@@ -42,7 +42,7 @@ services:
       GIN_MODE: release
       RUN_SEEDER: "false"
     ports:
-      - "8080:8080"
+      - "8090:8090"
     volumes:
       - ./static/uploads:/root/static/uploads
       - ./logs:/root/logs
